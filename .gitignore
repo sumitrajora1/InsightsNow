@@ -1,0 +1,15 @@
+.venv/
+.runtime/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+*.db
+*.log
+.env
+ui/.streamlit/secrets.toml
+*.egg-info/
+build/
+dist/
+.DS_Store
+*.py[cod]

@@ -1,0 +1,77 @@
+{
+  "catalogs": [
+    {
+      "user": "alice|bob",
+      "catalog": "demo_hive|demo_oracle",
+      "allow": "read-only"
+    }
+  ],
+  "tables": [
+    {
+      "user": "alice",
+      "catalog": "demo_hive",
+      "schema": "lending",
+      "table": "exposure_snapshots",
+      "privileges": [
+        "SELECT"
+      ]
+    },
+    {
+      "user": "alice",
+      "catalog": "demo_oracle",
+      "schema": "lending",
+      "table": "facilities",
+      "privileges": [
+        "SELECT"
+      ]
+    },
+    {
+      "user": "bob",
+      "catalog": "demo_oracle",
+      "schema": "lending",
+      "table": "facilities",
+      "privileges": [
+        "SELECT"
+      ],
+      "filter": "country = 'UAE'"
+    },
+    {
+      "user": "bob",
+      "catalog": "demo_hive",
+      "schema": "lending",
+      "table": "exposure_snapshots",
+      "privileges": [
+        "SELECT"
+      ],
+      "filter": "currency = 'AED' AND facility_id IN ('SYN-001','SYN-002','SYN-013','SYN-014','SYN-025','SYN-026')"
+    },
+    {
+      "privileges": []
+    }
+  ],
+  "functions": [
+    {
+      "privileges": []
+    }
+  ],
+  "procedures": [
+    {
+      "privileges": []
+    }
+  ],
+  "queries": [
+    {
+      "user": "alice|bob",
+      "allow": [
+        "execute"
+      ]
+    }
+  ],
+  "system_session_properties": [
+    {
+      "user": "alice|bob",
+      "property": "query_max_run_time",
+      "allow": true
+    }
+  ]
+}

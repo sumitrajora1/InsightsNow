@@ -1,0 +1,4 @@
+{
+  "rootGroups":[{"name":"edq","softMemoryLimit":"60%","hardConcurrencyLimit":4,"maxQueued":8,"schedulingPolicy":"fair"}],
+  "selectors":[{"user":"alice|bob","group":"edq"}]
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<configuration>
+  <property><name>xasecure.policymgr.clientssl.truststore</name><value>/etc/trino/trust/ranger-truststore.jks</value></property>
+  <property><name>xasecure.policymgr.clientssl.truststore.type</name><value>jks</value></property>
+  <property><name>xasecure.policymgr.clientssl.truststore.credential.file</name><value>/etc/trino/secrets/ranger-ssl.jceks</value></property>
+  <!-- Credential provider alias: sslTrustStore. Add keystore settings only for required mTLS. -->
+</configuration>

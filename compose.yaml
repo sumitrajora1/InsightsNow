@@ -1,0 +1,65 @@
+name: english-data-query
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: edq
+      POSTGRES_USER: edq_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate .env with scripts/local_secrets.py}
+    ports: ["127.0.0.1:5433:5432"]
+    volumes: ["sessions-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edq_admin -d edq"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  provision:
+    build: .
+    command: ["python", "-m", "scripts.provision"]
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+      SOURCE_DB_PASSWORD: ${SOURCE_DB_PASSWORD:?}
+    depends_on:
+      postgres: {condition: service_healthy}
+  trino:
+    image: trinodb/trino:484
+    environment:
+      SOURCE_DB_PASSWORD: ${SOURCE_DB_PASSWORD:?}
+    ports: ["127.0.0.1:8080:8080"]
+    volumes:
+      - ./deploy/trino:/etc/trino:ro
+      - trino-data:/data/trino
+    depends_on:
+      provision: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/v1/info"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    mem_limit: 4g
+  api:
+    build: .
+    environment:
+      EDQ_DATABASE_URL: postgresql+psycopg://edq_app:${APP_DB_PASSWORD:?}@postgres:5432/edq
+      EDQ_EXECUTOR: trino
+      EDQ_TRINO_HOST: trino
+      EDQ_TRINO_AUTH: demo
+      EDQ_ENVIRONMENT: development
+      EDQ_AUTH_MODE: development
+      EDQ_METADATA_PROVIDER: fixture
+      EDQ_LLM_PROVIDER: mock
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      trino: {condition: service_healthy}
+  ui:
+    build: .
+    command: ["streamlit", "run", "ui/app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true", "--browser.gatherUsageStats=false"]
+    environment:
+      EDQ_API_URL: http://api:8000
+      EDQ_UI_AUTH_MODE: development
+    ports: ["127.0.0.1:8501:8501"]
+    depends_on: [api]
+volumes:
+  sessions-data:
+  trino-data:

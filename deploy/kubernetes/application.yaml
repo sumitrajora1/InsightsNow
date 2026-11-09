@@ -1,0 +1,151 @@
+# TEMPLATE: fill image digests, ingress/TLS, secret references and egress rules before applying.
+# External PostgreSQL and Trino are deliberate dependencies, not embedded bank credentials.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edq-api
+spec:
+  replicas: 1 # In-process cancellation + job coordinator: do NOT scale without a shared durable queue.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: edq-api}
+  template:
+    metadata:
+      labels: {app: edq-api}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: api
+          image: registry.example/edq:REPLACE_WITH_REVIEWED_TAG
+          ports: [{containerPort: 8000}]
+          envFrom:
+            - configMapRef: {name: edq-config}
+            - secretRef: {name: edq-api-secrets}
+          env:
+            - {name: EDQ_POLICY_PATH, value: /etc/edq/policy.json}
+          volumeMounts:
+            - {name: policy, mountPath: /etc/edq, readOnly: true}
+            - {name: runtime, mountPath: /opt/edq/.runtime}
+            - {name: tmp, mountPath: /tmp}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "2", memory: 2Gi}
+          readinessProbe:
+            httpGet: {path: /health/ready, port: 8000}
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health/live, port: 8000}
+            initialDelaySeconds: 15
+      volumes:
+        - name: policy
+          configMap: {name: edq-policy}
+        - name: runtime
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: edq-api}
+spec:
+  selector: {app: edq-api}
+  ports: [{port: 8000, targetPort: 8000}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: edq-ui}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: edq-ui}
+  template:
+    metadata:
+      labels: {app: edq-ui}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: ui
+          image: registry.example/edq:REPLACE_WITH_REVIEWED_TAG
+          command: [streamlit, run, ui/app.py, --server.address=0.0.0.0, --server.port=8501, --server.headless=true, --browser.gatherUsageStats=false]
+          env:
+            - {name: EDQ_API_URL, value: "http://edq-api:8000"}
+            - {name: EDQ_UI_AUTH_MODE, value: oidc_proxy}
+          ports: [{containerPort: 8501}]
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: edq-ui}
+spec:
+  selector: {app: edq-ui}
+  ports: [{port: 8501, targetPort: 8501}]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: edq-config}
+data:
+  EDQ_ENVIRONMENT: production
+  EDQ_AUTH_MODE: oidc
+  EDQ_EXECUTOR: trino
+  EDQ_TRINO_SCHEME: https
+  EDQ_TRINO_HOST: REPLACE_WITH_TRINO_HOST
+  EDQ_TRINO_PORT: "8443"
+  EDQ_TRINO_AUTH: jwt_passthrough
+  EDQ_TRINO_TOKEN_AUDIENCE: REPLACE_WITH_APPROVED_TRINO_AUDIENCE
+  EDQ_METADATA_PROVIDER: openmetadata
+  EDQ_OM_URL: https://REPLACE_WITH_METADATA_HOST
+  EDQ_OM_EXPECTED_VERSION: REPLACE_WITH_TESTED_VERSION_PREFIX
+  EDQ_LLM_PROVIDER: bedrock
+  EDQ_BEDROCK_MODEL_ID: REPLACE_WITH_APPROVED_MODEL_ID
+  EDQ_AWS_REGION: me-central-1
+  EDQ_OIDC_ISSUER: https://REPLACE_WITH_IDENTITY_ISSUER
+  EDQ_OIDC_AUDIENCE: REPLACE_WITH_API_AUDIENCE
+  EDQ_OIDC_JWKS_URL: https://REPLACE_WITH_IDENTITY_JWKS
+  EDQ_RETENTION_DAYS: "30"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: edq-default-deny}
+spec:
+  podSelector:
+    matchExpressions:
+      - {key: app, operator: In, values: [edq-api, edq-ui]}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: edq-ui-to-api}
+spec:
+  podSelector:
+    matchLabels: {app: edq-api}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app: edq-ui}}}]
+      ports: [{protocol: TCP, port: 8000}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: edq-ui-egress}
+spec:
+  podSelector:
+    matchLabels: {app: edq-ui}
+  policyTypes: [Egress]
+  egress:
+    - to: [{podSelector: {matchLabels: {app: edq-api}}}]
+      ports: [{protocol: TCP, port: 8000}]
+    - ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]

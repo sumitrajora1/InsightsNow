@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<configuration>
+  <property><name>ranger.plugin.trino.policy.rest.url</name><value>https://REPLACE_WITH_CDP_RANGER_HOST:6182</value></property>
+  <property><name>ranger.plugin.trino.access.cluster.name</name><value>REPLACE_WITH_CLUSTER_NAME</value></property>
+  <property><name>ranger.plugin.trino.use.rangerGroups</name><value>true</value></property>
+  <property><name>ranger.plugin.trino.use.only.rangerGroups</name><value>true</value></property>
+  <!-- Deliberately no superusers/supergroups. Configure Ranger Admin authentication
+       (e.g. approved keytab/UGI settings) for your deployment; this file alone does not do so. -->
+</configuration>

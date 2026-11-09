@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<configuration>
+  <property><name>xasecure.audit.is.enabled</name><value>true</value></property>
+  <!-- Merge the bank-approved destination, TLS, credentials, spool and retention settings.
+       Audit enabled=true without a destination is NOT a working bank audit pipeline. -->
+</configuration>

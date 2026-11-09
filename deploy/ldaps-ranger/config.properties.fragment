@@ -1,0 +1,9 @@
+# MERGE into an existing, secured cluster config. This is not a complete cluster config.
+http-server.authentication.type=PASSWORD
+http-server.http.enabled=false
+http-server.https.enabled=true
+http-server.https.port=8443
+http-server.https.keystore.path=/etc/trino/secrets/coordinator.p12
+http-server.https.keystore.key=${ENV:TRINO_TLS_KEYSTORE_PASSWORD}
+internal-communication.shared-secret=${ENV:TRINO_INTERNAL_SHARED_SECRET}
+# Update discovery/internal TLS for the actual cluster before disabling its HTTP listener.

@@ -1,0 +1,108 @@
+{
+  "synthetic": true,
+  "capabilities": [
+    "approved_contract",
+    "glossary",
+    "columns",
+    "documented_join"
+  ],
+  "assets": [
+    {
+      "id": "exposure",
+      "fqn": "demo_hive.lending.exposure_snapshots",
+      "columns": [
+        {
+          "name": "facility_id",
+          "data_type": "varchar",
+          "description": "Facility foreign key",
+          "sensitivity": "internal"
+        },
+        {
+          "name": "snapshot_date",
+          "data_type": "date",
+          "description": "Complete month-end snapshot date",
+          "sensitivity": "internal"
+        },
+        {
+          "name": "exposure_amount",
+          "data_type": "decimal(18,2)",
+          "description": "Outstanding balance in recorded currency",
+          "sensitivity": "internal"
+        },
+        {
+          "name": "currency",
+          "data_type": "varchar",
+          "description": "ISO currency, never mix currencies in a sum",
+          "sensitivity": "internal"
+        }
+      ],
+      "description": "SYNTHETIC demonstration data, not live bank records.",
+      "owner": "Synthetic Lending Data Owner",
+      "source_url": "fixture://exposure",
+      "lineage": [],
+      "version": "synthetic-v1"
+    },
+    {
+      "id": "facilities",
+      "fqn": "demo_oracle.lending.facilities",
+      "columns": [
+        {
+          "name": "facility_id",
+          "data_type": "varchar",
+          "description": "Unique facility key",
+          "sensitivity": "internal"
+        },
+        {
+          "name": "industry",
+          "data_type": "varchar",
+          "description": "Approved industry grouping",
+          "sensitivity": "internal"
+        },
+        {
+          "name": "country",
+          "data_type": "varchar",
+          "description": "Facility country",
+          "sensitivity": "internal"
+        }
+      ],
+      "description": "SYNTHETIC demonstration data, not live bank records.",
+      "owner": "Synthetic Lending Data Owner",
+      "source_url": "fixture://facilities",
+      "lineage": [],
+      "version": "synthetic-v1"
+    }
+  ],
+  "metrics": [
+    {
+      "id": "month_end_exposure",
+      "name": "Corporate lending exposure",
+      "definition": "Outstanding funded balance at each complete month end. Sum facilities within one date and one currency only. A period comparison uses the average of complete monthly totals, not the sum of snapshot balances.",
+      "source_asset": "exposure",
+      "value_column": "exposure_amount",
+      "snapshot_column": "snapshot_date",
+      "currency_column": "currency",
+      "default_currency": "AED",
+      "units": "currency units",
+      "grain": "one facility per month end",
+      "as_of": "2026-10-31",
+      "join_id": "facility_join",
+      "formula": "sum_per_snapshot",
+      "period_comparison": "average_month_end",
+      "glossary_ref": "glossary://CorporateLending.Exposure",
+      "minimum_group_size": 2
+    }
+  ],
+  "joins": [
+    {
+      "id": "facility_join",
+      "left_asset": "exposure",
+      "left_column": "facility_id",
+      "right_asset": "facilities",
+      "right_column": "facility_id",
+      "cardinality": "many_to_one"
+    }
+  ],
+  "available_definitions": {
+    "CorporateLending.Exposure": "Outstanding funded balance at a complete month end; excludes undrawn commitments."
+  }
+}

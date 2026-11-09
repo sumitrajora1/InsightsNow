@@ -1,0 +1,47 @@
+{
+  "openmetadata_names": {
+    "demo_hive.lending.exposure_snapshots": "SyntheticHive.demo.lending.exposure_snapshots",
+    "demo_oracle.lending.facilities": "SyntheticOracle.demo.lending.facilities"
+  },
+  "roles": {
+    "lending_analyst": {
+      "assets": {
+        "demo_hive.lending.exposure_snapshots": [
+          "facility_id",
+          "snapshot_date",
+          "exposure_amount",
+          "currency"
+        ],
+        "demo_oracle.lending.facilities": [
+          "facility_id",
+          "industry",
+          "country"
+        ]
+      },
+      "currencies": [
+        "AED",
+        "USD"
+      ],
+      "country": null
+    },
+    "uae_analyst": {
+      "assets": {
+        "demo_hive.lending.exposure_snapshots": [
+          "facility_id",
+          "snapshot_date",
+          "exposure_amount",
+          "currency"
+        ],
+        "demo_oracle.lending.facilities": [
+          "facility_id",
+          "industry",
+          "country"
+        ]
+      },
+      "currencies": [
+        "AED"
+      ],
+      "country": "UAE"
+    }
+  }
+}
